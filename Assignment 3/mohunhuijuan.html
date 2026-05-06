@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>忍者必须死 · 水墨忍卷</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', 'SimHei', 'STHeiti', serif;
+            color: #1e1b1a;
+            min-height: 100vh;
+            background-color: #2a241e;
+        }
+
+        ::-webkit-scrollbar { width: 6px; background: #2a241e; }
+        ::-webkit-scrollbar-thumb { background: #b32d2d; border-radius: 8px; }
+
+        /* 固定导航栏 - 置中有限寬度 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(17, 16, 14, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            padding: 0.6rem 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .nav-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            max-width: 600px;
+            width: 100%;
+        }
+        .nav-btn {
+            background: none;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: white;
+            letter-spacing: 1px;
+            cursor: pointer;
+            padding: 0.3rem 0.8rem;
+            font-family: inherit;
+            position: relative;
+        }
+        .nav-btn.active { color: #e63e3e; }
+        .nav-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            height: 2px;
+            background-color: white;
+            border-radius: 2px;
+        }
+        .nav-btn:hover { color: #e63e3e; }
+
+        /* 主容器 - 讓背景完全顯示 */
+        .main-container {
+            width: 100%;
+            min-height: 100vh;
+            padding-top: 60px;
+        }
+
+        /* 頁面容器 - 滿版背景，內容置中有限寬度 */
+        .page {
+            display: none;
+            animation: fade 0.2s ease;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: calc(100vh - 60px);
+            width: 100%;
+            padding: 2rem 1rem;
+        }
+        .page.active-page { display: block; }
+        
+        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 所有內容區塊共用置中容器 - 寬度與導航列一致 */
+        .content-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* 世界觀區塊 */
+        .worldview-wrapper {
+            background: rgba(255, 251, 245, 0.92);
+            border-radius: 24px;
+            padding: 1rem;
+            backdrop-filter: blur(4px);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .timeline-switch { display: flex; gap: 0; width: 100%; }
+        .timeline-btn {
+            background: #99928a; border: none; padding: 0.6rem 2rem; font-size: 1rem;
+            font-weight: bold; color: white; cursor: pointer; flex: 1;
+        }
+        .timeline-btn.active-time { background: #b32d2d; }
+        .story-box {
+            border: 1px solid #c9bcab; border-top: none; background: rgba(255, 254, 248, 0.96);
+            padding: 2rem; line-height: 1.7; min-height: 260px;
+        }
+
+        /* 抽卡區域 */
+        .gacha-panel {
+            max-width: 1100px;
+            margin: 0 auto;
+            text-align: center; background: rgba(255, 251, 245, 0.92); border-radius: 32px;
+            backdrop-filter: blur(4px); padding: 1.5rem;
+        }
+        .gacha-buttons { display: flex; justify-content: center; gap: 2rem; margin: 1.5rem 0; }
+        .gacha-btn {
+            background: #1e1b1a; border: 1px solid #b32d2d; color: #f0e2d0; padding: 0.7rem 2rem;
+            font-size: 1.1rem; font-weight: bold; border-radius: 48px; cursor: pointer;
+        }
+        .gacha-btn:hover { background: #b32d2d; color: white; }
+        .result-area { background: rgba(236, 227, 217, 0.95); border-radius: 24px; padding: 1.2rem; min-height: 180px; }
+        .draw-cards-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; margin-top: 0.8rem; }
+        .mini-card {
+            width: 95px; border-radius: 12px; background: #2c2a28; overflow: hidden; text-align: center;
+        }
+        .mini-card img { width: 100%; height: 95px; object-fit: cover; }
+        .mini-card .card-name { padding: 0.3rem; background: rgba(0,0,0,0.7); color: #e7cfb5; font-size: 0.8rem; }
+        .toast-msg { color: #b32d2d; font-weight: bold; margin-top: 10px; }
+
+        /* ========= 角色簡介頁面 ========= */
+        .char-profile-layout { 
+            max-width: 1300px; 
+            margin: 0 auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 1.8rem; 
+        }
+        /* 上方圓形頭像列 - 半透明但有限寬度 */
+        .avatar-strip {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            padding: 1.2rem;
+            border-radius: 80px;
+        }
+        .avatar-item {
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 85px;
+        }
+        .avatar-item:hover { transform: translateY(-5px); }
+        .avatar-circle {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            background-color: #2c241e;
+            border: 3px solid #c9aa7b;
+            transition: 0.2s;
+        }
+        .avatar-item.active .avatar-circle { border-color: #e63e3e; box-shadow: 0 0 0 3px rgba(230,62,62,0.4); }
+        .avatar-name { margin-top: 8px; font-weight: bold; color: #f0e2d0; text-shadow: 1px 1px 0 #1f1b18; font-size: 0.85rem; }
+        .lock-badge { font-size: 0.7rem; color: #ffb347; }
+
+        /* 中間左右區塊 */
+        .char-detail-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            background: rgba(30, 27, 24, 0.7);
+            backdrop-filter: blur(5px);
+            border-radius: 36px;
+            padding: 1.5rem;
+        }
+        .card-switch-area {
+            flex: 1.2;
+            min-width: 260px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 28px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .skin-switch-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .skin-tab {
+            background: #3a2c24;
+            border: none;
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+            color: #e7cfb5;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .skin-tab.active-skin { background: #b32d2d; color: white; }
+        .skin-tab:disabled { opacity: 0.5; cursor: not-allowed; }
+        .card-image-box {
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            background: #1f1b18;
+            border-radius: 28px;
+            background-size: cover;
+            background-position: center;
+            margin: 0.5rem 0;
+            box-shadow: 0 8px 18px black;
+        }
+        .skin-story-text {
+            margin-top: 1rem;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
+            padding: 0.8rem;
+            color: #f5e6d3;
+            font-size: 0.9rem;
+        }
+        .detail-area {
+            flex: 1.2;
+            min-width: 260px;
+            background: rgba(254, 247, 232, 0.95);
+            border-left: 5px solid #b32d2d;
+            border-radius: 24px;
+            max-height: 920px;
+            overflow-y: auto;
+            padding: 1.2rem;
+        }
+        .detail-scroll p { margin: 0.6rem 0; }
+        .info-locked { color: #a08060; font-style: italic; background: #efe3d4; padding: 0.4rem; border-radius: 12px; margin: 0.5rem 0; }
+        .skin-story { margin-top: 1.2rem; border-top: 2px dashed #c9b387; padding-top: 0.8rem; }
+
+        /* 圖鑑頁面 */
+        .ency-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .ency-card {
+            aspect-ratio: 2 / 3;
+            border-radius: 20px;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .ency-card .card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            padding: 0.8rem;
+            text-align: center;
+        }
+        .ency-card .card-name { color: white; font-weight: bold; font-size: 0.85rem; }
+        .shake-animation { animation: shake 0.3s ease-in-out 0s 2; }
+        @keyframes shake { 0%,100%{ transform: translateX(0);} 25%{ transform: translateX(-4px);} 75%{ transform: translateX(4px);} }
+
+        /* 測驗頁面樣式 */
+        .quiz-question {
+            background: rgba(30, 27, 24, 0.85);
+            border-radius: 20px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .quiz-question p {
+            font-weight: bold;
+            margin-bottom: 0.8rem;
+            color: #ffd966;
+            font-size: 1rem;
+        }
+        .quiz-option {
+            display: inline-block;
+            background: #3a2c24;
+            padding: 8px 18px;
+            border-radius: 40px;
+            margin: 5px 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+            color: #f0e2d0;
+        }
+        .quiz-option.selected {
+            background: #b32d2d;
+            color: white;
+            box-shadow: 0 0 0 2px #ffb347;
+        }
+        .quiz-option:hover {
+            background: #b32d2d;
+            transform: scale(1.02);
+        }
+
+        @media (max-width: 800px) { 
+            .ency-grid { grid-template-columns: repeat(2,1fr); } 
+            .char-detail-panel { flex-direction: column; }
+            .nav-container { gap: 0.8rem; }
+            .nav-btn { font-size: 0.75rem; padding: 0.2rem 0.4rem; }
+        }
+        
+        @media (max-width: 800px) { 
+            .ency-grid { grid-template-columns: repeat(2,1fr); } 
+            .char-detail-panel { flex-direction: column; }
+        }
+        
+        .footer-tip { text-align: center; margin-top: 2rem; color: #dcceb9; font-size: 0.7rem; text-shadow: 1px 1px 0 #000; }
+        .progress-badge { font-size: 0.7rem; background: #b32d2d; color: white; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-container">
+        <button class="nav-btn active" data-page="world">世界觀</button>
+        <button class="nav-btn" data-page="gacha">抽卡</button>
+        <button class="nav-btn" data-page="characters">角色簡介</button>
+        <button class="nav-btn" data-page="encyclopedia">圖鑑</button>
+        <button class="nav-btn" data-page="quiz">忍之魂·測驗</button>
+    </div>
+</nav>
+
+<div class="main-container">
+    <div id="worldPage" class="page active-page">
+        <div class="worldview-wrapper">
+            <div class="timeline-switch">
+                <button class="timeline-btn active-time" data-era="past">300年前</button>
+                <button class="timeline-btn" data-era="present">現今</button>
+            </div>
+            <div class="story-box" id="storyContent">
+                300年前，來自鬼域的鬼族打開羅生之門，入侵這塊土地。為首的鬼王率領鬼群不斷肆虐，大地崩裂，多數生靈或成黑石，或化為鬼族，一時間蒼生塗炭。<br><br>
+                鬼族的入侵，打破了這片大陸的祥和。各族間雖不斷抵抗，但由於鬼族的力量過於強大，無數族群被其毀滅，鬼族勢力也愈發壯大，整個西北大陸已然成為黑暗之地。人們意識到這毀滅性的威脅，自發性地組成抵抗鬼族聯盟，各族間強力協助和持續抵抗，最終由忍神和武士大名利用上古寶物，將鬼王封印在忍神山，隨著鬼王被封印，鬼族餘孽似乎也消失殆盡。<br><br>
+                世間恢復和平，忍神和武士便在此建立和之國，以和平之意，堅守封印，守護大陸太平。而各族群間經歷此大戰後，也開始有意識的強大自我，逐漸成長。</div>
+        </div>
+    </div>
+    <div id="gachaPage" class="page">
+        <div class="gacha-panel">
+            <div class="gacha-buttons"><button class="gacha-btn" id="singleDraw">單抽</button><button class="gacha-btn" id="fiveDraw">五連抽</button></div>
+            <div class="result-area"><div style="font-weight:bold;">✦ 抽卡結果 ✦</div><div id="drawDisplay">點擊按鈕召喚忍者</div></div>
+        </div>
+    </div>
+    <div id="charactersPage" class="page">
+        <div class="char-profile-layout">
+            <div class="avatar-strip" id="avatarStrip"></div>
+            <div class="char-detail-panel">
+                <div class="card-switch-area">
+                    <div class="skin-switch-buttons" id="skinSwitchBtns"></div>
+                    <div class="card-image-box" id="cardImageBox"></div>
+                    <div class="skin-story-text" id="skinStoryText">選擇皮膚後顯示故事</div>
+                </div>
+                <div class="detail-area" id="detailArea"><div class="detail-scroll"> 點擊上方圓形頭像選擇角色</div></div>
+            </div>
+        </div>
+    </div>
+    <div id="encyclopediaPage" class="page">
+        <div class="ency-grid" id="encyGrid"></div>
+        <div class="footer-tip">✦ 緣起不滅 · 墨卷留魂 ✦</div>
+    </div>
+
+    <!-- 忍之魂測驗頁面 (第五頁) -->
+    <div id="quizPage" class="page">
+        <div style="max-width: 800px; margin: 0 auto; background: rgba(0,0,0,0.55); backdrop-filter: blur(5px); border-radius: 36px; padding: 2rem;">
+            <h2 style="color:#ffd966; text-align:center; margin-bottom: 0.5rem;">⚡ 忍之魂・心理測驗 ⚡</h2>
+            <p style="text-align:center; margin-bottom: 1.5rem; color:#f0e2d0;">回答直覺，找出與你靈魂共鳴的忍者</p>
+            
+            <div id="quizContainer"></div>
+            
+            <button id="submitQuizBtn" style="display: block; width: 100%; background: #b32d2d; border: none; padding: 0.8rem; border-radius: 48px; color: white; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 1.5rem;">✨ 解讀你的忍道 ✨</button>
+            
+            <div id="quizResult" style="margin-top: 1.5rem; background: #1e1b1a; border-radius: 24px; padding: 1rem; text-align: center; display: none;">
+                <div id="quizResultText"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==============================================================
+    // ⭐ 圖片設定區 - 所有圖片都在這裡修改 ⭐
+    // ==============================================================
+    const IMAGE_SETTINGS = {
+        // 1. 各頁面滿版背景圖片 (無邊框限制，覆蓋整個頁面)
+        BACKGROUNDS: {
+            world: "images/1.jpg",      // 世界觀背景圖片，例如 "images/world-bg.jpg"
+            gacha: "images/22.png",      // 抽卡背景圖片
+            characters: "images/3.jpg", // 角色簡介背景圖片
+            encyclopedia: "images/5.jpg", // 圖鑑背景圖片
+            quiz: "images/12.jpg"
+        },
+        // 2. 角色圓形頭像圖片 (6張)
+        AVATAR_IMAGES: {
+            "小黑": "images/10.png", "阿力": "images/12.png", "蒼牙": "images/14.png", "琳": "images/16.png", "小椒": "images/18.png", "隼白": "images/20.png"
+        },
+        // 3. 角色原始卡片圖片 (左側大圖)
+        ORIGINAL_CARD_IMAGES: {
+            "小黑": "images/10.png", "阿力": "images/12.png", "蒼牙": "images/14.png", "琳": "images/16.png", "小椒": "images/18.png", "隼白": "images/20.png"
+        },
+        // 4. 角色皮膚卡片圖片 (左側大圖，皮膚)
+        SKIN_CARD_IMAGES: {
+            "小黑": "images/11.png", "阿力": "images/13.png", "蒼牙": "images/15.png", "琳": "images/17.png", "小椒": "images/19.png", "隼白": "images/21.png"
+        },
+        // 5. 圖鑑12張獨立圖片 (原始卡6張 + 皮膚卡6張)
+        ENCY_IMAGES: {
+            "original_小黑": "images/10.png", "original_阿力": "images/12.png", "original_蒼牙": "images/14.png", "original_琳": "images/16.png", "original_小椒": "images/18.png", "original_隼白": "images/20.png",
+            "skin_小黑": "images/11.png", "skin_阿力": "images/13.png", "skin_蒼牙": "images/15.png", "skin_琳": "images/17.png", "skin_小椒": "images/19.png", "skin_隼白": "images/21.png"
+        },
+        // 6. 未解鎖問號圖片 (留空則顯示❓)
+        LOCKED_PLACEHOLDER: "",
+        // 7. 皮膚故事 (每個皮膚一段文字)
+        SKIN_STORIES: {
+            "小黑": "【龍焰·小黑】在傳說中由忍神親手佈置的修羅試煉場——苦無禁地——進行生死試煉的小黑，成功覺醒了體內的炎龍之力。",
+            "阿力": "【超威·阿力】阿力夢回童年時代，在自己從小的熱愛中，找出了進化之力。",
+            "蒼牙": "【緋斬·蒼牙】與摯友短暫的重逢，讓蒼牙放下了內心的虧欠。他將以更鋒利的刀刃，來守護身邊的人。",
+            "琳": "【雪舞·琳】透過苦無禁地試煉的琳，斬斷恐懼、突破內心桎梏，成功覺醒了霜華之力。",
+            "小椒": "【星閃·小椒】經過試煉，小椒不再對自己的出身感到迷茫，並覺醒了早已暗湧在體內的雷之力。",
+            "隼白": "【夜叉·隼白】隼白因其精通風、雷、火三系忍法，被稱為百年一遇的天才忍者。又因其最擅長的風系忍法，而繼承了最強風忍之名－－「夜叉」。"
+        }
+    };
+    
+    // 套用各頁面滿版背景圖片
+    for (let [page, imgUrl] of Object.entries(IMAGE_SETTINGS.BACKGROUNDS)) {
+        let pageEl = document.getElementById(page + "Page");
+        if (pageEl) {
+            if (imgUrl && imgUrl !== "") {
+                pageEl.style.backgroundImage = `url('${imgUrl}')`;
+                pageEl.style.backgroundSize = "cover";
+                pageEl.style.backgroundPosition = "center";
+                pageEl.style.backgroundAttachment = "fixed";
+                pageEl.style.backgroundColor = "transparent";
+            } else {
+                const defaultColors = { world: "#f2ebdf", gacha: "#ede3d5", characters: "#f7efe3", encyclopedia: "#e2d5c4" };
+                pageEl.style.backgroundColor = defaultColors[page] || "#2a241e";
+                pageEl.style.backgroundImage = "none";
+            }
+        }
+    }
+    // ==============================================================
+
+    const ROSTER = ["小黑", "阿力", "蒼牙", "琳", "小椒", "隼白"];
+    const SKIN_NAMES = { "小黑": "龍焰", "阿力": "超威", "蒼牙": "緋斬", "琳": "雪舞", "小椒": "星閃", "隼白": "夜叉" };
+    
+    // 詳細資料
+    const FULL_DATA = {
+        "小黑":{ gender:"男",birth:"12月5日（16歲，射手座）",height:"168cm",personality:"有神秘感，樂觀而平易近人。面對困難不服輸，雖然執行任務時很果斷，但偶爾也會因心軟而猶豫不決",hobby:"甩圍巾、玩酷、喜歡活躍氣氛",bio:"小黑自小成長於忍村，立志成為偉大的忍者。但幼時的小黑曾因體內的巨大能量而經歷了一段黑暗的時光，幸得長老的教導和隼白等夥伴的幫助才使得小黑走出陰影，成長為現在這個樂觀開朗的少年。但幾年後，和之國的和平被打破，隼白的改變使小黑產生信念的掙扎。而在苦無禁地的修行之中，小黑重回過去，衝破內心的桎梏，擊敗白小黑，成功覺醒了體內蘊藏的龍焰之力。那一刻的小黑建立了真正的忍者信念，並明白了屬於自己的責任和使命。"
+        ,extra:"在月之湖被沙克擊敗後，小黑與同伴們一同墜入傳說中的苦無禁地——這是初代忍神親手佈置的試煉場，三百年來，能夠活著走出這裡的人屈指可數。 <br><br>在禁地的深處，小黑被迫直面自己內心最深處的黑暗<br><br>小黑看到了童年的自己。 <br><br>那個因為力量失控而被其他孩子稱為「怪物」的自己；那個縮在角落不敢接近任何人的自己；那個拼命想要變強、只是為了證明自己「不是怪物」的自己。 <br><br>禁地創造了一個與小黑暗面對立的化身－白小黑。他穿著純白色的衣服，表情冰冷，代表小黑長期壓抑的一切：自卑、恐懼、被拋棄的憤怒，以及對自己力量的懷疑。 <br><br>白小黑一針見血地指出了小黑的本質：他一直害怕自己的力量，害怕失控，害怕再次傷害他人。這種恐懼讓他始終無法發揮真正的力量。 <br><br>在苦戰中，小黑回憶起隼白送他紅色圍巾時的鼓勵、“陽”犧牲前那句“活下去”，終於明白——逃避過去的自己，就永遠無法成為真正的自己。 <br><br>只有接納完整的自我──包括那些黑暗、痛苦與恐懼──才能真正掌控體內的力量。 <br><br>小黑不再壓制體內的火焰，主動釋放了那股曾經讓他害怕的力量。 <br>火焰凝聚成一條炎龍的姿態，環繞在他周身。炎龍不是在攻擊他，而是在認可他。 <br><br>那一刻，小黑覺醒了「龍焰之力」。"},
+        "阿力":{ gender:"男",birth:"7月12⽇（17歲，巨蟹座）",height:"170cm",personality:"自信，善於思考。天然的具備大哥立場，重仁義，待人隨和，但意外的在某些觀點上也會十分執著",hobby:"最愛喝竹葉寨「燒酒」（其實是飲料），喜歡和小椒一起執行任務",bio:"阿力是熊貓人一族，自小和小椒、小白生活在偏遠的竹葉寨裡，表面上看似大大咧咧，實則心細如發。身為竹葉寨的少主，熊貓長老對阿力的要求頗高，各種訓練一項不落，還曾將阿力以交換生的身份送到忍者學校與小黑一起學習忍術，不過阿力憑藉著強大的雷之力天賦迅速在忍者學校嶄露頭角，成長為一名精英忍者。"
+        ,extra:"在月之湖被沙克击败后，阿力与同伴一同坠入苦无禁地。<br><br>禁地的试炼规则是“引出心魔”——挖掘试炼者内心最深处的黑暗记忆。小黑面对的是童年阴影，苍牙面对的是战友之死，琳面对的是姐姐失踪，小椒面对的是灭族之痛。<br><br>但阿力，没有心魔。<br><br>翻阅他所有记忆，找不到任何重大创伤、生离死别或遗恨终身的经历。<br><br>没有心魔就没法试炼？<br><br>禁地的守护者给出了一份“特殊的考验”——实际上是奖励式的试炼。<br><br>阿力先后被拉入两个世界：<br><br>《忍斗罗》游戏世界：他童年最爱的电子游戏，里面每一个小怪都鲜活地围绕着他，喊他“殿下”<br><br>《雷龙珠》漫画世界：他小时候最爱看的少年漫画，见到了偶像“鳖仙人”<br><br>在《雷龙珠》世界，阿力的任务是“收集七颗雷龙珠”。<br><br>前六颗顺利找到，第七颗却怎么也找不到。<br><br>翻山越岭数天后，阿力沮丧地回到鳖仙人面前。鳖仙人缓缓伸出手——<br><br>第七颗雷龙珠，一直在鳖仙人身上。<br><br>“最后一关不是奔跑，不是战斗，”鳖仙人说，“而是——询问。”<br><br>阿力接过第七颗雷龙珠，天空雷光炸裂。<br><br>一条巨大的雷龙从云层跃出，不是敌人，而是伙伴。<br><br>阿力骑上雷龙的背脊——电流从雷龙涌向他的身体，童年时打游戏的快乐、看漫画的惊喜、幻想拥有超能力的纯粹热爱，在这一刻被全部唤醒。<br><br>身体里因“少主责任”而紧绷的弦彻底松开。<br><br>他找回了初心。<br><br>雷光乍现——<br><br>“超威·阿力”，诞生。"},
+        "蒼牙":{ gender:"男",birth:"1月18日（19歲，摩羯座）",height:"177cm",personality:"堅毅沉著，看似冷峻但內心也有著溫柔的角落。在那件事之後，習慣把情緒深藏在心裡，令人十分難以察覺其內心真實想法",hobby:"很喜歡吃老闆娘做的飯糰，但從來沒在人前表現過",bio:"蒼牙是輝風一族被寄予厚望的少主，也是忍村的超級菁英忍者。但自從那次執行任務，關鍵時刻沒有救到戰友，只剩自己存活後，他便隱藏在了面具之下，而任務背後的種種端倪讓蒼牙堅定了強大起來，查明真相，為戰友報仇的信念，並帶著這種信念去往雲之國修行。蒼牙執行任務時果斷而毫不留情，但很少表露內心的真實想法，也可能是因為當時失去隊友所影響。"
+        ,extra:"兩年前，蒼牙與戰友綾羽、赤鬼在蒼白雪原執行任務時遭遇意外。 <br><br>綾羽被自己的武器貫穿身體而亡－有人奪走了她的刀，用她自己的武器殺死了她。 <br><br>蒼牙是唯一活下來的人。 <br><br>從此，他戴上荊棘鳥面具（綾羽家族的象徵），立誓「不會再讓夥伴犧牲」。 <br><br>在苦無禁地中，蒼牙被迫直面最深的惡夢－<br><br>「綾羽」的呼救聲反覆出現。他一次次衝過去營救，卻一次又一次看著她死在面前。 <br><br>戴著荊棘鳥面具的「心魔」在耳邊謳諷：「偽善者」「弱小的你根本救不了任何人」「你其實根本不想救她，對吧？」<br><br>蒼牙幾乎崩潰，甚至開始懷疑自己是否真的盡力了。 <br><br>第N次失敗後，從「綾羽」的屍體旁掉落了一面鏡子──那是蒼牙兩年前送給綾羽的禮物。 <br><br>鏡中，他看到面具正在從自己臉上摘下。 <br><br>不－不是摘下，而是他要戴上綾羽的面具。 <br><br>他記起了綾羽生前說過的話：<br><br>「活著的人，要更加努力地活下去，帶著死去之人的心願一起前行。」<br><br>眼前求救的「綾羽」根本不是綾羽－－那隻是禁地編織的幻影。 <br><br>擊敗假綾羽後，真正的綾羽靈魂浮現。 <br><br>「對不起，我沒能救你。」<br><br>綾羽微笑著打斷他：<br><br>「是沒能好好告別呢。」<br><br>「繼續戰鬥下去，成為更多人的『光』。」< br><br>她的身影消散在風中：<br><br>「長風吹過的時候，我就在你身邊。」<br><br>蒼牙摘下舊面具，戴上綾羽的面具－－不是沉淪於愧疚，而是繼承她的意志。 <br><br>綾羽的死因真相尚未查明，但蒼牙已不再被悔恨束縛。 <br><br>緋斬·蒼牙－誕生。"},
+        "琳":{ gender:"女",birth:"9月9⽇（17歲，處女座）",height:"165cm",personality:"思維敏捷，善於分析和觀察，平常溫和而易於親近，但有時也會展現冷酷決絕的一面",hobby:"喜歡柔軟、毛茸茸的東西和照顧別人，喜歡和小椒鬥嘴",bio:"琳是來自「玉狐一族」的少女，自小生活在遙遠且環境惡劣的玉狐雪山。姊姊失蹤後，琳成為了玉狐一族的繼任巫女，出於某種目的，歷經千辛萬苦來到忍村學習忍術。儘管琳在忍者學校的時候經常照顧大家，也會和不講道理的小椒鬥嘴，總是表現出溫暖樂觀的一面，但在琳的心中其實一直有著無法言說的秘密。後來的苦無禁地修行一途，使得琳真正明白了自己身為巫女的意義和責任，從而覺醒了體內的雪舞之力。"
+        ,extra:"琳，玉狐一族的繼任巫女，從小在極北之地的玉狐雪山長大。 <br><br>她的姊姊凜是上一任巫女－某一天毫無徵兆地失蹤了。 <br><br>琳被迫接任巫女之位，但她參加忍者考試的真正目的並非為了正義，而是為了尋找姐姐的下落。 <br><br>蒼雪祝神鈴－凜留給她的唯一遺物－是她與姊姊之間最後的羈絆。 <br><br>在苦無禁地中，琳被迫直面內心最深處的恐懼－<br><br>並非姊姊的死亡，而是她無法拯救姊姊。 <br><br>幻境中，凜的身體被玉狐一族的古老詛咒侵蝕，變形為渾身纏繞詛咒之氣的怪物－「冥狐」。 <br><br>「冥狐」對琳發出質問：<br><br>「你在害怕什麼？是怕我消失？還是怕你根本沒有能力成為巫女？」<br><br>這句話擊中了琳內心最脆弱的地方－自從凜失蹤後，她一直在用「尋找姊姊」這個目標麻痺自己，逃避「成為壓力。 <br><br>面對被詛咒侵蝕的“凜”，琳無法出手。 <br><br>那是她的姊姊－即使只是幻影。 <br><br>但一個聲音在她心中響起－那是她自己覺醒的聲音：<br><br>「姊姊已經不在你身邊了。但你還有族人要守護。你不能永遠停留在『尋找姊姊』的原點。」<br><br>淚水凝結成冰晶墜落。琳抬起頭－<br><br>眼神變了。不再是恐懼與迷茫，而是堅定。 <br><br>「你不是我姊姊。你是我的心魔。而我－我要斬斷你。」<br><br>琳出手了。 <br><br>冰藍色的光芒在黑暗中綻放，如同雪山之巔的極光。 <br><br>她斬斷的不是對姊姊的思念，而是被思念困住的自己。 <br><br>詛咒消散，幻影碎裂。 <br><br>雪舞·琳——覺醒。"},
+        "小椒":{ gender:"女",birth:"3月29日（15歲，白羊座）",height:"159cm",personality:"直率、莽撞而豪爽，熱情開朗，行事中透露著奶兇奶兇的氣息",hobby:"喜歡收集各種各樣的食材，特別是辣味相關",bio:"小椒是神炎一族的後裔，出生便遭遇了族群的滅亡，但幸運地被盛桂所救。因可愛的嬰兒手中還緊握著一根辣椒，故而得名小椒。小椒深得熊貓長老和竹葉寨人的喜愛，由於食神·盛桂的影響，喜歡採集各種各樣的食材，總能製作出讓人驚喜的美食。日漸成長的小椒為追尋自己的身世加入了忍者團，大大咧咧的她，雖然沒有系統的學習過，但憑藉天賦與體術基礎，仍然可以游刃有餘的做出忍者動作。而那火焰之力是神炎一族的獨特天賦，像辣椒一樣火爆！"
+        ,extra:"小椒是神炎一族的後裔。出生當天，族群在一場謎之大火中滅亡。她被食神·盛桂救下，帶到竹葉寨由熊貓長老撫養長大。 <br><br>她一直有兩個心結：<br><br>神炎一族究竟發生了什麼事？為何只有她活了下來？ <br><br>她是「神炎一族的最後一人」－這個身份，與「竹葉寨的小椒」之間，是否有衝突？ <br><br>在苦無禁地中，小椒墜入一個美好的幻境－竹葉寨正在過年，張燈結彩，熊貓長老、小白等家人都在身邊。 <br><br>一切都太過美好，美好得不真實。隱約的不對勁感讓她警覺，但她一時捨不得打破這份溫暖。 <br><br>一名神秘的「旅行者」突然出現在幻境中，打破了表面的平靜。 <br><br>「我知道你的來歷。神炎一族最後的血脈——你現在，過得幸福嗎？你過得幸福，但你不安。因為你不知道自己的根在哪裡，不知道自己活下去的意義是什麼。」<br><br>幻境開始崩塌，熊貓人們的身影消散。小白消失前留下最後的話：<br><br>「無論你的身世如何，你永遠是竹葉寨的小椒！永遠是我們的家人！」<br><br>幻境破碎後，小椒麵對「另一個自己」－神炎一族執念的化身。 <br><br>「你沉溺於竹葉寨的溫暖，假裝自己可以重新開始…但你忘不了我們。你無法真正成為『竹葉寨之人』。」<br><br>小椒的回答是：<br><br>「我沒有忘記神炎一族，也從未假裝自己是竹葉寨之人。 他們真心對我好，我也真心把他們當家人－這兩件事，並不衝突。小椒抬起手－掌心燃起的不是火焰，而是銀白色的雷電。 <br><br>神炎一族的血脈中一直潛藏著雷之力，只有突破內心桎梏、放下執念的人才能覺醒它。 <br><br>星閃·小椒－誕生。"},
+        "隼白":{ gender:"男",birth:"11月11日（19歲，天蠍座）",height:"178cm",personality:"思慮周密，冷酷果決；認定之事，必要辦到",hobby:"未知。但他有個目標，為了忍者與和之國的未來，挑起忍武大戰、推翻武士統治",bio:"人稱“白夜叉”，曾是忍村最被寄以厚望的未來領袖。在成長的道路上，隼白日復一日地磨礪自己，誓要領導忍者走向一個更光明的未來。直到那位亦師亦友的前輩，為了忍者的明天，毅然選擇自我犧牲……那一天，隼白堅定了腳下的路，他將帶領忍者打破身上的枷鎖，開啟新的時代。"
+        ,extra:"隼白年少時，所在的隊伍叫夜叉小隊。 <br><br>隊長是綾翼。 <br><br>他來自荊棘鳥家族－一個不擅戰鬥、卻能看透人心的族群。綾翼沒有驚人的忍術，但他有一種罕見的才能：他能看見一個人本質的模樣，看見他心底的光，也看見他未來可能成為的樣子。 <br><br>他是隼白的引路人。 <br><br>在遇見綾翼之前，隼白心中有太多疑問。 <br><br>為什麼忍者要活在黑暗裡？為什麼要遵守三百年前那紙舊契約？為什麼被欺壓、被掠奪、被遺忘，卻不能反抗？ <br><br>他找不到答案。 <br><br>直到遇見綾翼。 <br><br>他是第一個真正「看見」他的人。他看到的不是那個冷漠寡言的少年，而是他內心深處藏著的－<br><br>溫柔。 <br><br>一個固執的、想要保護所有人的笨蛋。 <br><br>綾翼從不講大道理，也不發號施令。 <br><br>他只是陪在他身旁。 <br><br>日復一日，她讓隼白明白：忍者的力量不是為了復仇，而是為了守護。真正的強大不是殺死多少敵人，而是能保護多少同伴。即使身處黑暗，你也可以成為照進黑暗的那束光。 <br><br>在綾翼的引導下，隼白的風之忍術突飛猛進。 <br><br>終於，他戰勝了他。 <br><br>這不是背叛，而是試煉－荊棘鳥家族的傳統。引導者必須被超越，被引導者才算真正出師。 <br><br>那一天，隼白獲得了「白夜叉」的稱號。 <br><br>那是綾翼給他的認可，是他踏上「最強風忍」之路的起點。 <br><br>後來，綾翼做了一個決定。 <br><br>為了忍者的未來，為了隼白的道路，為了某種她堅信的、比生命更重要的東西－<br​​><br>他選擇了犧牲。 <br><br>並且，他要求隼白親手結束這一切。 <br><br>「你必須證明，你已經足夠強大，能夠承擔起忍者的未來。」<br><br>「你必須成為那個帶領大家走出黑暗的人。」<br><br>隼白拔出了劍。 <br><br>那一刻，他的內心在撕裂。但他不能猶豫──因為這是綾翼最後的請求，是他必須跨越的、成為真正領袖的最後一道坎。 <br><br>那一天之後，隼白變了。 <br><br>他不再是那個會在綾翼面前露出溫柔表情的少年。他的眼神更銳利，決心更堅定。他創立了鷹組織，策劃了忍武大戰，走上了那條「以暴制暴、徹底革命」的道路。 <br><br>但一切的起點，都是綾翼。 <br><br>是他讓他相信，忍者可以改變命運。 <br><br>也是他的犧牲，讓他明白，「改變」需要付出怎樣的代價。"}
+    };
+
+    // 解鎖等級
+    let charLevel = { "小黑":0,"阿力":0,"蒼牙":0,"琳":0,"小椒":0,"隼白":0 };
+    function isUnlocked(c) { return charLevel[c] >= 1; }
+    function isSkinUnlocked(c) { return charLevel[c] >= 3; }
+    
+    function upgradeChar(c) {
+        let old = charLevel[c];
+        if(old===0) { charLevel[c]=1; return { up:true, msg:`初次邂逅！解鎖「${c}」基本資料` }; }
+        if(old===1) { charLevel[c]=2; return { up:true, msg:`緣分加深！解鎖「${c}」完整檔案` }; }
+        if(old===2) { charLevel[c]=3; return { up:true, msg:`羈絆圓滿！解鎖「${c}」秘話＆皮膚` }; }
+        return { up:false, msg:`與「${c}」緣分已深` };
+    }
+
+    let currentChar = "小黑";
+    let currentSkinIdx = 0;
+
+    function getAvatarImg(char) { let u=IMAGE_SETTINGS.AVATAR_IMAGES[char]; return u && u!="" ? `url('${u}')` : "linear-gradient(135deg,#5c483a,#2f241e)"; }
+    function getCardImg(char, skinType) {
+        if(skinType===0) { let u=IMAGE_SETTINGS.ORIGINAL_CARD_IMAGES[char]; return u && u!="" ? `url('${u}')` : "linear-gradient(145deg,#44392e,#1e1915)"; }
+        else { let u=IMAGE_SETTINGS.SKIN_CARD_IMAGES[char]; return u && u!="" ? `url('${u}')` : "linear-gradient(145deg,#6e4f38,#2d231c)"; }
+    }
+    function getEncyImg(type,char){ let key=type+"_"+char, u=IMAGE_SETTINGS.ENCY_IMAGES[key]; return u&&u!=""?`url('${u}')`:"radial-gradient(circle at 30% 20%,#534434,#1a130e)"; }
+
+    function renderAvatarStrip() {
+        let container = document.getElementById("avatarStrip");
+        container.innerHTML = "";
+        ROSTER.forEach(char => {
+            let unlocked = isUnlocked(char);
+            let div = document.createElement("div");
+            div.className = "avatar-item";
+            if(currentChar===char) div.classList.add("active");
+            div.innerHTML = `<div class="avatar-circle" style="background-image:${getAvatarImg(char)}; background-size:cover;"></div>
+                            <div class="avatar-name">${char}</div>
+                            ${!unlocked ? '<div class="lock-badge">🔒</div>' : '<div class="lock-badge" style="color:#bada77;">✦</div>'}`;
+            div.addEventListener("click",() => {
+                if(!isUnlocked(char)) { showTip("尚未解鎖，請至抽卡獲得此忍"); return; }
+                currentChar = char;
+                currentSkinIdx = (isSkinUnlocked(char) && currentSkinIdx===1) ? 1 : 0;
+                renderAvatarStrip();
+                updateCardAndDetail();
+                renderSkinSwitchButtons();
+            });
+            container.appendChild(div);
+        });
+    }
+
+    function updateCardAndDetail() {
+        let unlockedSkin = isSkinUnlocked(currentChar);
+        if(currentSkinIdx===1 && !unlockedSkin) currentSkinIdx=0;
+        let imgUrl = getCardImg(currentChar, currentSkinIdx);
+        document.getElementById("cardImageBox").style.backgroundImage = imgUrl;
+        document.getElementById("cardImageBox").style.backgroundSize = "cover";
+        document.getElementById("cardImageBox").style.backgroundPosition = "center";
+        
+        let storyText = currentSkinIdx===0 ? "【原始型態】忍者最初的裝束，承載著修行之路的記憶。" : (IMAGE_SETTINGS.SKIN_STORIES[currentChar] || "華麗皮膚蘊藏獨特忍法。");
+        document.getElementById("skinStoryText").innerHTML = `${storyText}`;
+        
+        let level = charLevel[currentChar];
+        let data = FULL_DATA[currentChar];
+        let html = `<div class="detail-scroll"><h2 style="color:#a13d2f; border-left:4px solid #b32d2d; padding-left:10px;">${currentChar}</h2>`;
+        if(level>=1) {
+            html += `<p><strong>性別</strong> ${data.gender}</p>`;
+            if(level>=2) html += `<p><strong>生日</strong> ${data.birth}</p><p><strong>身高</strong> ${data.height}</p><p><strong>個性</strong> ${data.personality}</p><p><strong>愛好</strong> ${data.hobby}</p><p><strong>簡歷</strong> ${data.bio}</p>`;
+            else html += `<div class="info-locked">🔒 更多資訊需再次邂逅此忍(完整檔案)</div>`;
+            if(level>=3) html += `<div class="skin-story"><strong>皮膚故事</strong><br>${data.extra}</div><div class="progress-badge">✨ 皮膚已解鎖</div>`;
+            else html += `<div class="info-locked">✨ 皮膚需解鎖全部檔案 + 秘話後獲得</div>`;
+        } else html += `<div class="info-locked">❓ 尚未解鎖，請至抽卡頁面召喚</div>`;
+        html += `</div>`;
+        document.getElementById("detailArea").innerHTML = html;
+    }
+
+    function renderSkinSwitchButtons() {
+        let container = document.getElementById("skinSwitchBtns");
+        if(!container) return;
+        let skinUnlocked = isSkinUnlocked(currentChar);
+        container.innerHTML = `
+            <button class="skin-tab ${currentSkinIdx===0?'active-skin':''}" data-skin="0">原始 · 忍裝</button>
+            <button class="skin-tab ${currentSkinIdx===1?'active-skin':''}" data-skin="1" ${!skinUnlocked?'disabled':''}>皮膚 · ${SKIN_NAMES[currentChar]}</button>
+        `;
+        document.querySelectorAll(".skin-tab").forEach(btn => {
+            btn.addEventListener("click",()=>{
+                let idx = parseInt(btn.dataset.skin);
+                if(idx===1 && !isSkinUnlocked(currentChar)) { showTip("需將角色檔案完全解鎖(等級3)才能使用皮膚"); return; }
+                currentSkinIdx = idx;
+                renderSkinSwitchButtons();
+                updateCardAndDetail();
+            });
+        });
+    }
+
+    function performDraw(count) {
+        let results = [];
+        for(let i=0;i<count;i++) results.push(ROSTER[Math.floor(Math.random()*ROSTER.length)]);
+        let newMsgs = [];
+        results.forEach(c => { let r = upgradeChar(c); if(r.up) newMsgs.push(r.msg); });
+        let cardsHtml = `<div class="draw-cards-grid">`;
+        results.forEach(c => {
+            let lv = charLevel[c];
+            let status = lv===0?"未解鎖":(lv===1?"初識":(lv===2?"知心":"羈絆圓滿"));
+            let img = (IMAGE_SETTINGS.ORIGINAL_CARD_IMAGES[c] && IMAGE_SETTINGS.ORIGINAL_CARD_IMAGES[c]!="") ? `<img src="${IMAGE_SETTINGS.ORIGINAL_CARD_IMAGES[c]}">` : `<div style="height:95px;display:flex;align-items:center;justify-content:center;background:#2c2a28;">🎴</div>`;
+            cardsHtml += `<div class="mini-card">${img}<div class="card-name">${c}<br><span style="font-size:0.65rem;">${status}</span></div></div>`;
+        });
+        cardsHtml += `</div><div class="toast-msg">${newMsgs.length?newMsgs.join('<br>'):' 重複相遇，羈絆已深'}</div>`;
+        document.getElementById("drawDisplay").innerHTML = cardsHtml;
+        renderAvatarStrip();
+        if(currentChar && isUnlocked(currentChar)) { updateCardAndDetail(); renderSkinSwitchButtons(); }
+        renderEncyclopedia();
+    }
+
+    function renderEncyclopedia() {
+        let grid = document.getElementById("encyGrid");
+        if(!grid) return;
+        grid.innerHTML = "";
+        for(let i=0;i<6;i++) { let c=ROSTER[i]; grid.appendChild(createEncyCard(c,"original",isUnlocked(c))); }
+        for(let i=0;i<6;i++) { let c=ROSTER[i]; grid.appendChild(createEncyCard(c,"skin",isSkinUnlocked(c))); }
+    }
+    
+    function createEncyCard(char,type,unlocked){
+        let card=document.createElement("div"); card.className="ency-card";
+        if(!unlocked){
+            let bg = (IMAGE_SETTINGS.LOCKED_PLACEHOLDER && IMAGE_SETTINGS.LOCKED_PLACEHOLDER!="") ? `url('${IMAGE_SETTINGS.LOCKED_PLACEHOLDER}')` : "radial-gradient(circle at 30% 40%, #2e2a26, #0f0d0b)";
+            card.style.backgroundImage = bg;
+            card.style.backgroundSize = "cover";
+            let overlay=document.createElement("div"); overlay.className="card-overlay";
+            overlay.innerHTML=`<div class="card-name">???</div><div style="font-size:0.7rem;">未解鎖</div>`;
+            card.appendChild(overlay);
+            card.addEventListener("click",()=>{ card.classList.add("shake-animation"); setTimeout(()=>card.classList.remove("shake-animation"),400); showTip("緣分未至，尚未解鎖"); });
+        } else {
+            let imgUrl = (type==="original") ? getEncyImg("original",char) : getEncyImg("skin",char);
+            card.style.backgroundImage = imgUrl;
+            card.style.backgroundSize = "cover";
+            card.style.backgroundPosition = "center";
+            let name = (type==="original")?char:`${char}·${SKIN_NAMES[char]}`;
+            let overlay=document.createElement("div"); overlay.className="card-overlay";
+            overlay.innerHTML=`<div class="card-name">${name}</div>`;
+            card.appendChild(overlay);
+            card.addEventListener("click",()=>showTip(`「${name}」已收入繪卷`));
+        }
+        return card;
+    }
+
+    // ========== 忍之魂心理測驗 ==========
+    let selectedQuizAnswers = [];
+    const quizQuestions = [
+    {
+        text: "週末你最想做的事？",
+        options: [
+            { text: "和朋友一起修行/訓練", traits: { "小黑":2, "阿力":2 } },
+            { text: "獨自冥想，精進忍術", traits: { "蒼牙":1, "隼白":2 } },
+            { text: "研究新忍具/藥劑", traits: { "小椒":2, "琳":1 } }
+        ]
+    },
+    {
+        text: "面對強敵時，你的直覺反應？",
+        options: [
+            { text: "正面猛攻，燃燒鬥魂", traits: { "小黑":2, "阿力":2 } },
+            { text: "冷靜觀察，尋找破綻", traits: { "蒼牙":2, "隼白":2 } },
+            { text: "支援夥伴，打持久戰", traits: { "琳":2, "小椒":1 } }
+        ]
+    },
+    {
+        text: "你更認同哪種價值觀？",
+        options: [
+            { text: "守護與羈絆", traits: { "小黑":2, "琳":2, "阿力":1 } },
+            { text: "強大與孤高", traits: { "隼白":3, "蒼牙":2 } },
+            { text: "自由與創造", traits: { "小椒":2, "阿力":1 } }
+        ]
+    },
+    {
+        text: "朋友形容你通常是？",
+        options: [
+            { text: "熱血又可靠", traits: { "小黑":2, "阿力":2 } },
+            { text: "溫柔又聰明", traits: { "琳":2, "小椒":1 } },
+            { text: "神秘有原則", traits: { "蒼牙":2, "隼白":2 } }
+        ]
+    },
+    {
+        text: "在團隊中你通常扮演什麼角色？",
+        options: [
+            { text: "領袖/決策者", traits: { "隼白":2, "蒼牙":1 } },
+            { text: "衝鋒陷陣的戰士", traits: { "小黑":2, "阿力":2 } },
+            { text: "輔助/支援者", traits: { "琳":2, "小椒":1 } }
+        ]
+    },
+    {
+        text: "你如何看待規則？",
+        options: [
+            { text: "遵守規則，維護秩序", traits: { "琳":2, "小黑":1 } },
+            { text: "打破規則，開創新路", traits: { "隼白":2, "小椒":2 } },
+            { text: "規則不重要，實力才是", traits: { "蒼牙":2, "阿力":1 } }
+        ]
+    },
+    {
+        text: "你比較嚮往哪種生活方式？",
+        options: [
+            { text: "熱鬧歡樂，與夥伴一起", traits: { "小黑":2, "阿力":2, "小椒":1 } },
+            { text: "寧靜獨處，追求極致", traits: { "蒼牙":2, "隼白":2 } },
+            { text: "平衡和諧，照顧他人", traits: { "琳":2 } }
+        ]
+    },
+    {
+        text: "你認為力量的本質是什麼？",
+        options: [
+            { text: "守護重要之人的工具", traits: { "小黑":2, "琳":2 } },
+            { text: "實現理想的必經之路", traits: { "隼白":2, "阿力":1 } },
+            { text: "證明自己的方式", traits: { "蒼牙":2, "小椒":2 } }
+        ]
+    }
+    ];
+
+    function renderQuiz() {
+        const container = document.getElementById("quizContainer");
+        if (!container) return;
+        let html = "";
+        quizQuestions.forEach((q, idx) => {
+            html += `<div class="quiz-question">
+                        <p>❖ ${q.text}</p>
+                        <div class="quiz-options">`;
+            q.options.forEach((opt, optIdx) => {
+                const isSelected = (selectedQuizAnswers[idx] === opt);
+                html += `<span class="quiz-option ${isSelected ? 'selected' : ''}" data-qidx="${idx}" data-optidx="${optIdx}">${opt.text}</span>`;
+            });
+            html += `</div></div>`;
+        });
+        container.innerHTML = html;
+        
+        document.querySelectorAll(".quiz-option").forEach(opt => {
+            opt.addEventListener("click", () => {
+                const qIdx = parseInt(opt.dataset.qidx);
+                const optIdx = parseInt(opt.dataset.optidx);
+                selectedQuizAnswers[qIdx] = quizQuestions[qIdx].options[optIdx];
+                renderQuiz();
+            });
+        });
+    }
+
+    function calculateQuizResult() {
+        let scores = { "小黑":0, "阿力":0, "蒼牙":0, "琳":0, "小椒":0, "隼白":0 };
+        for (let i = 0; i < selectedQuizAnswers.length; i++) {
+            const opt = selectedQuizAnswers[i];
+            if (opt && opt.traits) {
+                for (let [char, val] of Object.entries(opt.traits)) {
+                    scores[char] = (scores[char] || 0) + val;
+                }
+            }
+        }
+        let maxChar = "小黑";
+        for (let char in scores) {
+            if (scores[char] > scores[maxChar]) maxChar = char;
+        }
+        return maxChar;
+    }
+
+    function showQuizResult() {
+    if (selectedQuizAnswers.length !== quizQuestions.length) {
+        alert("請回答完所有題目～");
+        return;
+    }
+    const resultChar = calculateQuizResult();
+    const resultDiv = document.getElementById("quizResult");
+    const resultTextSpan = document.getElementById("quizResultText");
+    
+    // 取得角色原始卡片圖片（長方形）
+    let charImageUrl = IMAGE_SETTINGS.ORIGINAL_CARD_IMAGES[resultChar];
+    if (!charImageUrl || charImageUrl === "") {
+        charImageUrl = IMAGE_SETTINGS.SKIN_CARD_IMAGES[resultChar];
+    }
+    
+    // 卡片樣式（長方形，像角色簡介左側那種）
+    const imageHtml = (charImageUrl && charImageUrl !== "") 
+        ? `<div style="width: 200px; margin: 1rem auto;">
+            <img src="${charImageUrl}" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
+           </div>`
+        : `<div style="width: 200px; height: 266px; margin: 1rem auto; background: linear-gradient(145deg,#44392e,#1e1915); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 3rem;">🎴</div>`;
+    
+    resultTextSpan.innerHTML = `
+        <div style="font-size:1.6rem; color:#ffd966; margin-bottom: 0.5rem;">✦ 你的忍道共鳴：${resultChar} ✦</div>
+        ${imageHtml}
+    `;
+    resultDiv.style.display = "block";
+    resultDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function initQuiz() {
+        selectedQuizAnswers = [];
+        renderQuiz();
+        const submitBtn = document.getElementById("submitQuizBtn");
+        if (submitBtn) submitBtn.addEventListener("click", showQuizResult);
+    }
+
+    function showTip(msg){ 
+        let t=document.getElementById("globalTip"); 
+        if(!t){ 
+            t=document.createElement("div"); 
+            t.id="globalTip"; 
+            t.style.cssText="position:fixed;bottom:20%;left:50%;transform:translateX(-50%);background:#1c1917;color:#e7cdad;padding:8px 22px;border-radius:40px;border:1px solid #b32d2d;z-index:999;font-weight:bold;white-space:nowrap;"; 
+            document.body.appendChild(t); 
+        } 
+        t.innerText=msg; 
+        t.style.opacity="1"; 
+        setTimeout(()=>t.style.opacity="0",1500); 
+    }
+
+    function switchPage(id){
+        document.querySelectorAll(".page").forEach(p=>p.classList.remove("active-page"));
+        document.getElementById(id+"Page").classList.add("active-page");
+        document.querySelectorAll(".nav-btn").forEach(btn=>{ btn.classList.remove("active"); if(btn.dataset.page===id) btn.classList.add("active"); });
+        if(id==="characters"){ renderAvatarStrip(); if(currentChar && isUnlocked(currentChar)){ updateCardAndDetail(); renderSkinSwitchButtons(); } else document.getElementById("detailArea").innerHTML=`<div class="detail-scroll">✨ 選擇已解鎖角色查看忍傳</div>`; }
+        if(id==="encyclopedia") renderEncyclopedia();
+        if(id==="quiz") initQuiz();
+    }
+
+    function setupWorldview(){
+        let past=document.querySelector(".timeline-btn[data-era='past']"), pres=document.querySelector(".timeline-btn[data-era='present']"), storyDiv=document.getElementById("storyContent");
+        past.addEventListener("click",()=>{ past.classList.add("active-time"); pres.classList.remove("active-time"); storyDiv.innerHTML="300年前，來自鬼域的鬼族打開羅生之門，入侵這塊土地。為首的鬼王率領鬼群不斷肆虐，大地崩裂，多數生靈或成黑石，或化為鬼族，一時間蒼生塗炭。<br><br>鬼族的入侵，打破了這片大陸的祥和。各族間雖不斷抵抗，但由於鬼族的力量過於強大，無數族群被其毀滅，鬼族勢力也愈發壯大，整個西北大陸已然成為黑暗之地。人們意識到這毀滅性的威脅，自發性地組成抵抗鬼族聯盟，各族間強力協助和持續抵抗，最終由忍神和武士大名利用上古寶物，將鬼王封印在忍神山，隨著鬼王被封印，鬼族餘孽似乎也消失殆盡。<br><br>世間恢復和平，忍神和武士便在此建立和之國，以和平之意，堅守封印，守護大陸太平。而各族群間經歷此大戰後，也開始有意識的強大自我，逐漸成長。"; });
+        pres.addEventListener("click",()=>{ pres.classList.add("active-time"); past.classList.remove("active-time"); storyDiv.innerHTML="鬼族大戰之後，忍族與武士族共同建立了新的國度－和之國，並交由武士統治，忍者則選擇退隱，於暗中輔佐武士，以堅守鬼王封印及守衛和之國，共同維護大陸和平。<br><br>300年間，和之國經歷了17位統治者，國家與族群間的關係也悄悄之中改變了。由於武士對國家的統治逐漸腐朽墮落，實力也越來越弱，和之國第17位統治者——年輕的大名開始忌憚忍者的強大力量會威脅到自己的統治地位，為了樹立威望，便在陰陽師的挑壓下，顧300年前忍者與武士達成的維護和平共生契約，授意了對忍者的鎮壓和絞殺行動。同時，武士城實際武力的最高統治者大將軍也在不斷壯大邊疆軍隊，策劃武士暗部行動，似乎醞釀著更大的秘密。此間，由於忍者族群和武士衝突不斷，另一股強大的勢力──反武士忍者組織也應運而生，一場為取回忍者大義的戰爭一觸即發。就在此時，鬼王餘孽捲土重來的謠言四起，忍界內憂外患，這片大陸的和平岌岌可危，一場席捲和之國的暴風雨即將到來。"; });
+    }
+    
+    function init(){
+        document.querySelectorAll(".nav-btn").forEach(btn=>btn.addEventListener("click",()=>switchPage(btn.dataset.page)));
+        document.getElementById("singleDraw").addEventListener("click",()=>performDraw(1));
+        document.getElementById("fiveDraw").addEventListener("click",()=>performDraw(5));
+        setupWorldview(); 
+        renderAvatarStrip(); 
+        renderEncyclopedia();
+        if(isUnlocked("小黑")){ updateCardAndDetail(); renderSkinSwitchButtons(); } 
+        else document.getElementById("detailArea").innerHTML=`<div class="detail-scroll">🔓 請至抽卡解鎖角色</div>`;
+    }
+    init();
+</script>
+</body>
+</html>
